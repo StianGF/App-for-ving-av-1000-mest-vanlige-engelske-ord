@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Øv på de 1000 vanligste engelske ordene</title>
+  <style>
+    body {
+      background: #fff;
+      color: #222;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 420px;
+      margin: 2em auto;
+      padding: 2em 1em;
+      box-shadow: 0 0 12px #eee;
+      border-radius: 10px;
+      background: #fafafb;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6em;
+      margin-bottom: 0.5em;
+    }
+    .mode-select {
+      display: flex;
+      gap: 1em;
+      justify-content: center;
+      margin-bottom: 1.5em;
+    }
+    .mode-select button {
+      flex: 1;
+      padding: 0.7em 0.5em;
+      border: none;
+      background: #e7e7e7;
+      color: #222;
+      font-size: 1em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .mode-select .active {
+      background: #4074e6;
+      color: #fff;
+      font-weight: bold;
+    }
+    .word-card {
+      padding: 2em 1em;
+      background: #fff;
+      border-radius: 8px;
+      margin-bottom: 1em;
+      text-align: center;
+      font-size: 1.5em;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 12px #eee;
+      min-height: 2.2em;
+      user-select: none;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.8em;
+      font-size: 1.2em;
+      margin-bottom: 1em;
+      border-radius: 6px;
+      border: 1px solid #dedede;
+      background: #f6f6f6;
+      box-sizing: border-box;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.8em;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      background: #4074e6;
+      color: #fff;
+      font-weight: bold;
+      margin-bottom: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:active, .btn:focus {
+      background: #2a57b2;
+    }
+    .feedback {
+      text-align: center;
+      margin-bottom: 1em;
+      font-size: 1.2em;
+      min-height: 2em;
+      color: #268141;
+      transition: color 0.3s;
+    }
+    .feedback.wrong {
+      color: #c11c1c;
+    }
+    .progress {
+      text-align: center;
+      font-size: 1em;
+      margin-bottom: 0.5em;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>1000 engelske ord</h1>
+    <div class="mode-select">
+      <button id="mode-en-no" class="active">Engelsk → Norsk</button>
+      <button id="mode-no-en">Norsk → Engelsk</button>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="word-card" id="word-card"></div>
+    <input type="text" id="answerInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Skriv ditt svar her...">
+    <button class="btn" id="submitBtn">Sjekk svar</button>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn" id="nextBtn" style="display:none;">Neste ord</button>
+  </div>
+  <script>
+    // Enkel liste med ca. 50 ordpar som eksempel. For full app bør du ha 1000, f.eks. fra CEFR eller bruk en kjent database.
+    const words = [
+      // [English, Norwegian]
+      ["the", "den, det"],
+      ["be", "være"],
+      ["and", "og"],
+      ["of", "av"],
+      ["a", "en, ei, et"],
+      ["in", "i"],
+      ["to", "til"],
+      ["have", "ha"],
+      ["it", "det"],
+      ["I", "jeg"],
+      ["that", "at, den, det"],
+      ["for", "for"],
+      ["you", "du, dere"],
+      ["he", "han"],
+      ["with", "med"],
+      ["on", "på"],
+      ["do", "gjøre"],
+      ["say", "si"],
+      ["this", "denne, dette"],
+      ["they", "de"],
+      ["at", "på, ved"],
+      ["but", "men"],
+      ["we", "vi"],
+      ["his", "hans"],
+      ["from", "fra"],
+      ["not", "ikke"],
+      ["by", "av, ved"],
+      ["she", "hun"],
+      ["or", "eller"],
+      ["as", "som"],
+      ["what", "hva"],
+      ["go", "gå"],
+      ["their", "deres"],
+      ["can", "kan"],
+      ["who", "hvem"],
+      ["get", "få"],
+      ["if", "hvis"],
+      ["would", "ville"],
+      ["her", "hennes"],
+      ["all", "alle"],
+      ["my", "min, mitt, mine"],
+      ["make", "lage, gjøre"],
+      ["about", "om"],
+      ["know", "vite"],
+      ["will", "vil, skal"],
+      ["as", "som"],
+      ["up", "opp"],
+      ["one", "en, én, ett"],
+      ["time", "tid"],
+      ["there", "der"],
+      ["year", "år"]
+    ];
+
+    // App State
+    let mode = 'en-no'; // 'en-no' (English → Norwegian), 'no-en' (Norwegian → English)
+    let currentIdx = 0;
+    let answerCorrect = false;
+    let order = [];
+    let rightAnswers = 0;
+
+    // HTML refs
+    const modeEnNoBtn = document.getElementById('mode-en-no');
+    const modeNoEnBtn = document.getElementById('mode-no-en');
+    const wordCard = document.getElementById('word-card');
+    const answerInput = document.getElementById('answerInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('nextBtn');
+    const progress = document.getElementById('progress');
+
+    function shuffleOrder(n) {
+      const arr = Array.from({length: n}, (_, i) => i);
+      // Fisher–Yates
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function setMode(m) {
+      mode = m;
+      currentIdx = 0;
+      order = shuffleOrder(words.length);
+      rightAnswers = 0;
+      modeEnNoBtn.classList.toggle('active', mode === 'en-no');
+      modeNoEnBtn.classList.toggle('active', mode === 'no-en');
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      nextBtn.style.display = 'none';
+      answerInput.value = '';
+      answerInput.disabled = false;
+      submitBtn.style.display = '';
+      showWord();
+      setProgress();
+      answerInput.focus();
+    }
+
+    function normalize(text) {
+      return text.trim().toLowerCase().replace(/[\.,]/g, '');
+    }
+
+    function getCurrentWord() {
+      const idx = order[currentIdx];
+      return words[idx];
+    }
+
+    function showWord() {
+      if(currentIdx >= words.length) {
+        wordCard.textContent = "Du er ferdig! 👏";
+        submitBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        answerInput.style.display = 'none';
+        feedback.textContent = `Du svarte riktig på ${rightAnswers} av ${words.length} ord.`;
+        feedback.className = 'feedback';
+        progress.textContent = '';
+        return;
+      }
+      answerInput.value = '';
+      answerInput.style.display = '';
+      submitBtn.style.display = '';
+      nextBtn.style.display = 'none';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      const [en, no] = getCurrentWord();
+      wordCard.textContent = mode === 'en-no' ? en : no;
+    }
+
+    function setProgress() {
+      progress.textContent = `Ord: ${currentIdx+1} / ${words.length}`;
+    }
+
+    function checkAnswer() {
+      const userAns = normalize(answerInput.value);
+      const [en, no] = getCurrentWord();
+      let correctAns = mode === 'en-no' ? no : en;
+      // Only compare the FIRST (most common) translation if multiple answers. Optionally can split and accept any.
+      let correctList = correctAns.split(/,|\//).map(a => normalize(a));
+      if (correctList.includes(userAns)) {
+        feedback.textContent = "Riktig! 🎉";
+        feedback.className = 'feedback';
+        answerCorrect = true;
+        rightAnswers += 1;
+        nextBtn.style.display = '';
+        submitBtn.style.display = 'none';
+        answerInput.disabled = true;
+      } else {
+        feedback.textContent = `Feil. Riktig svar: ${correctList[0]}`;
+        feedback.className = 'feedback wrong';
+        answerCorrect = false;
+        nextBtn.style.display = '';
+        submitBtn.style.display = 'none';
+        answerInput.disabled = true;
+      }
+    }
+
+    // Event listeners
+    modeEnNoBtn.addEventListener('click', () => setMode('en-no'));
+    modeNoEnBtn.addEventListener('click', () => setMode('no-en'));
+    submitBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', () => {
+      currentIdx += 1;
+      answerInput.disabled = false;
+      showWord();
+      setProgress();
+      answerInput.focus();
+    });
+    answerInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter' && !answerInput.disabled) {
+        checkAnswer();
+      }
+    });
+
+    // Init
+    setMode('en-no');
+  </script>
+</body>
+</html>
